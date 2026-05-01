@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQARL — SQA Reference Language</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,300;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0f0e0d; --paper: #f5f2ed; --card: #ffffff;
+    --accent: #1a3cff; --accent2: #ff3c1a; --accent3: #00b87a;
+    --muted: #7a7570; --border: #e0dbd4;
+    --code-bg: #0f0e0d; --code-fg: #e8e4de;
+    --code-kw: #5c9eff; --code-str: #ff9e5c; --code-val: #7dd3a8; --code-cm: #6b7280;
+    --radius: 10px; --shadow: 0 2px 12px rgba(15,14,13,0.08);
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; font-size: 16px; line-height: 1.6; }
+
+  nav { background: var(--ink); color: var(--paper); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; color: var(--paper); display: flex; align-items: center; gap: 8px; }
+  .nav-logo span { background: var(--accent); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+  .nav-tabs { display: flex; height: 100%; }
+  .nav-tab { background: none; border: none; color: rgba(245,242,237,0.5); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; padding: 0 18px; cursor: pointer; height: 100%; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .nav-tab:hover { color: var(--paper); }
+  .nav-tab.active { color: var(--paper); border-bottom-color: var(--accent); }
+
+  .hero { background: var(--ink); color: var(--paper); padding: 4rem 2rem 3rem; text-align: center; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px); pointer-events: none; }
+  .hero-eyebrow { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.15em; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
+  .hero h1 { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 700; line-height: 1.1; margin-bottom: 16px; }
+  .hero h1 em { font-style: normal; color: var(--accent); font-family: 'Space Mono', monospace; }
+  .hero p { font-size: 1.05rem; color: rgba(245,242,237,0.65); max-width: 560px; margin: 0 auto 2rem; font-weight: 300; }
+  .hero-stats { display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap; }
+  .hero-stat strong { display: block; font-family: 'Space Mono', monospace; font-size: 1.8rem; color: var(--accent); }
+  .hero-stat small { font-size: 12px; color: rgba(245,242,237,0.45); letter-spacing: 0.05em; }
+
+  .section { display: none; animation: fadeIn 0.2s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
+  .container { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+  .section-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+  .section-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 2rem; font-weight: 300; }
+
+  .ref-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1rem; }
+  .ref-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .ref-card-head { background: var(--ink); color: var(--paper); padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+  .ref-tag { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.08em; background: var(--accent); color: white; padding: 2px 8px; border-radius: 3px; text-transform: uppercase; }
+  .ref-card-head h3 { font-size: 13px; font-weight: 500; color: rgba(245,242,237,0.85); }
+  .ref-card-body { padding: 14px 16px; }
+  .ref-card-body p { font-size: 13px; color: var(--muted); margin-bottom: 10px; font-weight: 300; }
+
+  pre { background: var(--code-bg); border-radius: 7px; padding: 14px 16px; overflow-x: auto; font-family: 'Space Mono', monospace; font-size: 12.5px; line-height: 1.7; }
+  pre code { font-family: inherit; color: var(--code-fg); }
+  .kw { color: var(--code-kw); font-weight: 700; }
+  .str { color: var(--code-str); }
+  .val { color: var(--code-val); }
+  .cm { color: var(--code-cm); font-style: italic; }
+  .op { color: #c792ea; }
+
+  .compare-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; box-shadow: var(--shadow); }
+  .compare-head { background: #f9f7f4; padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .compare-tag { font-size: 10px; font-family: 'Space Mono', monospace; background: #e8e3dc; color: var(--muted); padding: 2px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .compare-cols { display: grid; grid-template-columns: 1fr 1fr; }
+  .compare-col { padding: 14px 16px; }
+  .compare-col:first-child { border-right: 1px solid var(--border); }
+  .compare-col-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .compare-col:first-child .compare-col-label { color: var(--accent); }
+  .compare-col:last-child .compare-col-label { color: var(--accent3); }
+  .compare-note { background: #fffbf5; border-left: 3px solid var(--accent); padding: 8px 14px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); line-height: 1.55; }
+  .compare-note strong { color: var(--ink); font-weight: 500; }
+
+  .quiz-progress { background: var(--border); border-radius: 99px; height: 6px; margin-bottom: 2rem; overflow: hidden; }
+  .quiz-progress-bar { background: var(--accent); height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+  .quiz-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .quiz-counter { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); }
+  .quiz-score-badge { font-family: 'Space Mono', monospace; font-size: 12px; background: var(--ink); color: var(--paper); padding: 3px 10px; border-radius: 99px; }
+  .quiz-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+  .quiz-type { font-size: 10px; font-family: 'Space Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  .quiz-question { font-size: 1rem; font-weight: 500; line-height: 1.5; margin-bottom: 1rem; }
+
+  .sqarl-label { font-size: 10px; font-family: 'Space Mono', monospace; letter-spacing: .08em; color: var(--accent); text-transform: uppercase; margin-bottom: 5px; }
+  .pseudo-label { font-size: 10px; font-family: 'Space Mono', monospace; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; }
+  .sqarl-block { background: var(--code-bg); border-radius: 7px; padding: 14px 16px; font-family: 'Space Mono', monospace; font-size: 12.5px; line-height: 1.7; color: var(--code-fg); margin-bottom: 1.25rem; white-space: pre; overflow-x: auto; }
+
+  .options { display: grid; gap: 8px; }
+  .option { background: #f9f7f4; border: 1.5px solid var(--border); border-radius: 8px; padding: 11px 16px; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 12px; transition: all 0.12s; text-align: left; color: var(--ink); display: flex; align-items: flex-start; gap: 10px; line-height: 1.6; white-space: pre-wrap; }
+  .option:hover:not(:disabled) { border-color: var(--accent); background: #f0f3ff; }
+  .opt-letter { width: 22px; height: 22px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; transition: all 0.12s; }
+  .option:hover:not(:disabled) .opt-letter { background: var(--accent); color: white; }
+  .option.correct { border-color: var(--accent3); background: #f0fff8; cursor: default; }
+  .option.correct .opt-letter { background: var(--accent3); color: white; }
+  .option.wrong { border-color: var(--accent2); background: #fff3f0; cursor: default; }
+  .option.wrong .opt-letter { background: var(--accent2); color: white; }
+  .option.faded { opacity: 0.38; cursor: default; }
+
+  .error-lines { background: var(--code-bg); border-radius: 7px; overflow: hidden; margin-bottom: 1.25rem; }
+  .error-line { display: flex; align-items: flex-start; cursor: pointer; border-left: 3px solid transparent; transition: all 0.1s; }
+  .error-line:hover { background: rgba(255,255,255,0.04); }
+  .error-line.correct-line { border-left-color: var(--accent3); background: rgba(0,184,122,0.08); cursor: default; }
+  .error-line.wrong-line { border-left-color: var(--accent2); background: rgba(255,60,26,0.08); cursor: default; }
+  .line-num { font-family: 'Space Mono', monospace; font-size: 11px; color: #555; width: 36px; text-align: right; padding: 5px 10px 0 0; flex-shrink: 0; user-select: none; }
+  .line-code { font-family: 'Space Mono', monospace; font-size: 12.5px; color: var(--code-fg); padding: 4px 14px 4px 8px; line-height: 1.7; }
+
+  .order-lines { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1.25rem; }
+  .order-line { background: var(--code-bg); border: 1.5px solid #333; border-radius: 6px; padding: 9px 14px; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--code-fg); cursor: grab; display: flex; align-items: center; gap: 10px; user-select: none; transition: border-color 0.1s, opacity 0.1s; white-space: pre; }
+  .order-line:active { cursor: grabbing; }
+  .order-line.dragging { opacity: 0.4; }
+  .order-line.drag-over { border-color: var(--accent); }
+  .drag-handle { color: #555; flex-shrink: 0; }
+
+  .feedback { border-radius: 8px; padding: 12px 16px; font-size: 13px; margin-top: 12px; display: none; line-height: 1.5; }
+  .feedback.show { display: block; }
+  .feedback.correct { background: #f0fff8; border: 1px solid var(--accent3); color: #065f46; }
+  .feedback.wrong { background: #fff3f0; border: 1px solid var(--accent2); color: #7f1d1d; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.12s; border: none; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #0d2ecc; }
+  .btn-primary:disabled { opacity: 0.4; cursor: default; }
+  .btn-ghost { background: transparent; border: 1.5px solid var(--border); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--ink); }
+  .quiz-actions { display: flex; gap: 10px; margin-top: 1rem; flex-wrap: wrap; }
+
+  .results-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.5rem; text-align: center; box-shadow: var(--shadow); }
+  .results-score { font-family: 'Space Mono', monospace; font-size: 4rem; font-weight: 700; line-height: 1; margin-bottom: 8px; }
+  .results-score.great { color: var(--accent3); }
+  .results-score.good { color: var(--accent); }
+  .results-score.retry { color: var(--accent2); }
+  .results-label { font-size: 1.1rem; font-weight: 500; margin-bottom: 6px; }
+  .results-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; font-weight: 300; }
+  .results-breakdown { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
+  .breakdown-stat strong { display: block; font-family: 'Space Mono', monospace; font-size: 1.4rem; }
+  .breakdown-stat small { font-size: 12px; color: var(--muted); }
+  .breakdown-stat.c strong { color: var(--accent3); }
+  .breakdown-stat.w strong { color: var(--accent2); }
+
+  .tip { background: #f0f3ff; border: 1px solid #c7d0ff; border-left: 3px solid var(--accent); border-radius: 8px; padding: 12px 16px; font-size: 13px; margin-bottom: 1rem; color: #1a2566; line-height: 1.5; }
+  .warn { background: #fff3f0; border: 1px solid #ffc4b8; border-left: 3px solid var(--accent2); border-radius: 8px; padding: 12px 16px; font-size: 13px; margin-bottom: 1rem; color: #7f2a1a; line-height: 1.5; }
+
+  .cheat-table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .cheat-table th { background: var(--ink); color: var(--paper); padding: 10px 16px; text-align: left; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; }
+  .cheat-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .cheat-table tr:last-child td { border-bottom: none; }
+  .cheat-table tr:hover td { background: #f9f7f4; }
+  .cheat-table td:first-child { font-weight: 500; font-size: 12px; color: var(--muted); white-space: nowrap; width: 140px; }
+  .cheat-table code { background: var(--code-bg); color: var(--code-kw); padding: 2px 7px; border-radius: 4px; font-family: 'Space Mono', monospace; font-size: 12px; display: inline; }
+  .cheat-table .pseudo-code { background: #1e2a1e; color: #a8d5a8; padding: 2px 7px; border-radius: 4px; font-family: 'Space Mono', monospace; font-size: 12px; display: inline; }
+  .cheat-table .note { font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 300; }
+
+  @media (max-width: 600px) {
+    .compare-cols, .ref-grid { grid-template-columns: 1fr; }
+    nav { padding: 0 1rem; }
+    .nav-tab { padding: 0 10px; font-size: 12px; }
+    .container { padding: 1.5rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><span>N5</span> SQARL Reference Language</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showSection('learn', this)">Learn</button>
+    <button class="nav-tab" onclick="showSection('examples', this)">Examples</button>
+    <button class="nav-tab" onclick="showSection('quiz', this)">Quiz</button>
+    <button class="nav-tab" onclick="showSection('cheatsheet', this)">Cheatsheet</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">SQA National 5 Computing Science</div>
+  <h1>Read <em>SQARL</em>, write pseudocode</h1>
+  <p>The exam shows you SQARL. You need to understand it and respond in pseudocode. This tool helps you practise exactly that skill.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><strong>6</strong><small>CONSTRUCTS</small></div>
+    <div class="hero-stat"><strong>5</strong><small>WORKED EXAMPLES</small></div>
+    <div class="hero-stat"><strong>15</strong><small>QUIZ QUESTIONS</small></div>
+  </div>
+</div>
+
+<!-- LEARN -->
+<div id="section-learn" class="section active">
+  <div class="container">
+    <div class="section-title">What does this SQARL mean?</div>
+    <div class="section-sub">Learn to read each SQARL construct and translate it into the pseudocode you'd write in an exam answer.</div>
+
+    <div class="tip"><strong>Your task in the exam:</strong> SQARL code will be shown to you. You may be asked to explain what it does, trace through it, or write equivalent pseudocode. You will <em>not</em> be expected to write SQARL yourself.</div>
+    <div class="warn"><strong>Key differences to watch for:</strong> SQARL uses <code>DECLARE … INITIALLY</code> where pseudocode uses <code>=</code>. It uses <code>SET … TO</code> for updates, <code>RECEIVE … FROM KEYBOARD</code> for input, and <code>SEND … TO DISPLAY</code> for output. None of these appear in your pseudocode answers.</div>
+
+    <div class="ref-grid">
+      <div class="ref-card">
+        <div class="ref-card-head"><span class="ref-tag">Variables</span><h3>Creating &amp; updating variables</h3></div>
+        <div class="ref-card-body">
+          <p><code>DECLARE score INITIALLY 0</code> = create a variable. <code>SET score TO score + 1</code> = update it. In your pseudocode, both are just <code>=</code>.</p>
+          <pre><code><span class="cm"># SQARL (what you see):</span>
+<span class="kw">DECLARE</span> score <span class="kw">INITIALLY</span> <span class="val">0</span>
+<span class="kw">SET</span> score <span class="kw">TO</span> score + <span class="val">1</span>
+
+<span class="cm"># Your pseudocode answer:</span>
+<span class="cm"># score = 0</span>
+<span class="cm"># score = score + 1</span></code></pre>
+        </div>
+      </div>
+
+      <div class="ref-card">
+        <div class="ref-card-head"><span class="ref-tag">I/O</span><h3>Input &amp; Output</h3></div>
+        <div class="ref-card-body">
+          <p><code>RECEIVE name FROM KEYBOARD</code> = ask the user to type something. <code>SEND "Hi " &amp; name TO DISPLAY</code> = show something on screen. In pseudocode: <code>Input</code> and <code>Print</code>. Note <code>&amp;</code> becomes <code>+</code>.</p>
+          <pre><code><span class="cm"># SQARL (what you see):</span>
+<span class="kw">RECEIVE</span> name <span class="kw">FROM KEYBOARD</span>
+<span class="kw">SEND</span> <span class="str">"Hi "</span> <span class="op">&amp;</span> name <span class="kw">TO DISPLAY</span>
+
+<span class="cm"># Your pseudocode answer:</span>
+<span class="cm"># Input name</span>
+<span class="cm"># Print "Hi " + name</span></code></pre>
+        </div>
+      </div>
+
+      <div class="ref-card">
+        <div class="ref-card-head"><span class="ref-tag">Selection</span><h3>IF / ELSE — and the nested IF trick</h3></div>
+        <div class="ref-card-body">
+          <p>SQARL has no <code>ELSE IF</code>. It nests a new <code>IF</code> inside <code>ELSE</code> instead. In your pseudocode you can write this as a clean <em>Else if</em> — that's simpler and equally correct.</p>
+          <pre><code><span class="cm"># SQARL (what you see):</span>
+<span class="kw">IF</span> score >= <span class="val">70</span> <span class="kw">THEN</span>
+  <span class="kw">SEND</span> <span class="str">"A"</span> <span class="kw">TO DISPLAY</span>
+<span class="kw">ELSE</span>
+  <span class="kw">IF</span> score >= <span class="val">50</span> <span class="kw">THEN</span>
+    <span class="kw">SEND</span> <span class="str">"B"</span> <span class="kw">TO DISPLAY</span>
+  <span class="kw">END IF</span>
+<span class="kw">END IF</span>
+
+<span class="cm"># Your pseudocode answer:</span>
+<span class="cm"># If score >= 70 then</span>
+<span class="cm">#   Print "A"</span>
+<span class="cm"># Else if score >= 50 then</span>
+<span class="cm">#   Print "B"</span>
+<span class="cm"># End if</span></code></pre>
+        </div>
+      </div>
+
+      <div class="ref-card">
+        <div class="ref-card-head"><span class="ref-tag">Iteration</span><h3>WHILE loop</h3></div>
+        <div class="ref-card-body">
+          <p><code>WHILE cond DO … END WHILE</code> = keep repeating while the condition is true. For input validation the variable starts at an invalid value so the loop always runs at least once. In pseudocode: <em>While … End while</em>.</p>
+          <pre><code><span class="cm"># SQARL (what you see):</span>
+<span class="kw">DECLARE</span> score <span class="kw">AS INTEGER INITIALLY</span> <span class="val">-1</span>
+<span class="kw">WHILE</span> score &lt; <span class="val">0</span> <span class="kw">OR</span> score &gt; <span class="val">100</span> <span class="kw">DO</span>
+  <span class="kw">RECEIVE</span> score <span class="kw">FROM KEYBOARD</span>
+<span class="kw">END WHILE</span>
+
+<span class="cm"># Your pseudocode answer:</span>
+<span class="cm"># score = -1</span>
+<span class="cm"># While score < 0 OR score > 100</span>
+<span class="cm">#   Input score</span>
+<span class="cm"># End while</span></code></pre>
+        </div>
+      </div>
+
+      <div class="ref-card">
+        <div class="ref-card-head"><span class="ref-tag">Iteration</span><h3>FOR / FOR EACH loops</h3></div>
+        <div class="ref-card-body">
+          <p><code>FOR i FROM 0 TO 4 DO</code> counts 0–4. <code>FOR EACH item FROM arr DO</code> visits every element. In pseudocode: <em>For i = 0 to 4</em> and <em>For each item in arr</em>. Drop the <code>DO</code> keyword.</p>
+          <pre><code><span class="cm"># SQARL (what you see):</span>
+<span class="kw">FOR EACH</span> item <span class="kw">FROM</span> myArray <span class="kw">DO</span>
+  <span class="kw">SEND</span> item <span class="kw">TO DISPLAY</span>
+<span class="kw">END FOR EACH</span>
+
+<span class="cm"># Your pseudocode answer:</span>
+<span class="cm"># For each item in myArray</span>
+<span class="cm">#   Print item</span>
+<span class="cm"># End for each</span></code></pre>
+        </div>
+      </div>
+
+      <div class="ref-card">
+        <div class="ref-card-head"><span class="ref-tag">Arrays</span><h3>Arrays &amp; Strings</h3></div>
+        <div class="ref-card-body">
+          <p>Arrays index from <strong>0</strong> — <code>scores[0]</code> is the first element. A STRING behaves like an array of characters, so <code>FOR EACH letter FROM word</code> reads one character at a time. Both work the same in pseudocode.</p>
+          <pre><code><span class="cm"># SQARL (what you see):</span>
+<span class="kw">DECLARE</span> scores <span class="kw">INITIALLY</span> [<span class="val">8</span>, <span class="val">6</span>, <span class="val">9</span>]
+<span class="kw">SEND</span> scores[<span class="val">0</span>] <span class="kw">TO DISPLAY</span> <span class="cm"># → 8</span>
+
+<span class="cm"># Your pseudocode answer:</span>
+<span class="cm"># scores = [8, 6, 9]</span>
+<span class="cm"># Print scores[0]   → 8</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXAMPLES -->
+<div id="section-examples" class="section">
+  <div class="container">
+    <div class="section-title">SQARL → pseudocode examples</div>
+    <div class="section-sub">Five N5 programs shown in SQARL on the left. The right column shows what a good pseudocode answer looks like.</div>
+    <div id="examples-container"></div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="section-quiz" class="section">
+  <div class="container">
+    <div id="quiz-container"></div>
+  </div>
+</div>
+
+<!-- CHEATSHEET -->
+<div id="section-cheatsheet" class="section">
+  <div class="container">
+    <div class="section-title">SQARL → pseudocode cheatsheet</div>
+    <div class="section-sub">Every construct you'll see in the exam and how to write it in your pseudocode answer.</div>
+    <table class="cheat-table">
+      <tr><th>Concept</th><th>SQARL (exam question)</th><th>Your pseudocode answer</th></tr>
+      <tr>
+        <td>Create variable</td>
+        <td><code>DECLARE score INITIALLY 0</code></td>
+        <td><span class="pseudo-code">score = 0</span><p class="note">Also fine: Set score to 0 &nbsp;/&nbsp; Let score = 0</p></td>
+      </tr>
+      <tr>
+        <td>Update variable</td>
+        <td><code>SET score TO score + 1</code></td>
+        <td><span class="pseudo-code">score = score + 1</span><p class="note">Also fine: score ← score + 1</p></td>
+      </tr>
+      <tr>
+        <td>Input</td>
+        <td><code>RECEIVE name FROM KEYBOARD</code></td>
+        <td><span class="pseudo-code">Input name</span><p class="note">Also fine: Get name &nbsp;/&nbsp; Read name</p></td>
+      </tr>
+      <tr>
+        <td>Input + declare</td>
+        <td><code>DECLARE x AS INTEGER INITIALLY FROM KEYBOARD</code></td>
+        <td><span class="pseudo-code">x = 0<br>Input x</span><p class="note">Or just: Input x (if x hasn't been declared yet)</p></td>
+      </tr>
+      <tr>
+        <td>Output</td>
+        <td><code>SEND "Hi " &amp; name TO DISPLAY</code></td>
+        <td><span class="pseudo-code">Print "Hi " + name</span><p class="note">Also fine: Output / Display / Write. Use + instead of &amp;</p></td>
+      </tr>
+      <tr>
+        <td>IF</td>
+        <td><code>IF cond THEN … END IF</code></td>
+        <td><span class="pseudo-code">If cond then … End if</span></td>
+      </tr>
+      <tr>
+        <td>IF / ELSE</td>
+        <td><code>IF cond THEN … ELSE … END IF</code></td>
+        <td><span class="pseudo-code">If cond then … Else … End if</span></td>
+      </tr>
+      <tr>
+        <td>Else if (nested in SQARL)</td>
+        <td><code>ELSE<br>&nbsp;&nbsp;IF cond THEN … END IF<br>END IF</code></td>
+        <td><span class="pseudo-code">Else if cond then … End if</span><p class="note">SQARL forces nesting. You can flatten this to Else if in pseudocode — it means the same thing.</p></td>
+      </tr>
+      <tr>
+        <td>WHILE loop</td>
+        <td><code>WHILE cond DO … END WHILE</code></td>
+        <td><span class="pseudo-code">While cond<br>&nbsp;&nbsp;…<br>End while</span></td>
+      </tr>
+      <tr>
+        <td>FOR loop</td>
+        <td><code>FOR i FROM 0 TO 9 DO … END FOR</code></td>
+        <td><span class="pseudo-code">For i = 0 to 9<br>&nbsp;&nbsp;…<br>End for</span></td>
+      </tr>
+      <tr>
+        <td>FOR EACH loop</td>
+        <td><code>FOR EACH x FROM arr DO … END FOR EACH</code></td>
+        <td><span class="pseudo-code">For each x in arr<br>&nbsp;&nbsp;…<br>End for each</span><p class="note">FROM becomes "in". Drop the DO keyword.</p></td>
+      </tr>
+      <tr>
+        <td>Array access</td>
+        <td><code>arr[0]</code> — first element</td>
+        <td><span class="pseudo-code">arr[0]</span><p class="note">Same notation. Still starts at index 0.</p></td>
+      </tr>
+      <tr>
+        <td>Concatenation</td>
+        <td><code>"Hello " &amp; name</code></td>
+        <td><span class="pseudo-code">"Hello " + name</span><p class="note">SQARL uses &amp;, pseudocode uses +</p></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<script>
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'quiz' && !quizBuilt) buildQuiz();
+  if (id === 'examples' && !examplesBuilt) buildExamples();
+}
+
+// ── Examples ───────────────────────────────────────────────
+const examples = [
+  {
+    title: "Input validation — score between 0 and 100",
+    scenario: "A program keeps asking the user for a score until a valid value is entered.",
+    sqarl: `<span class="kw">DECLARE</span> score <span class="kw">AS INTEGER INITIALLY</span> <span class="val">-1</span>
+<span class="kw">WHILE</span> score &lt; <span class="val">0</span> <span class="kw">OR</span> score &gt; <span class="val">100</span> <span class="kw">DO</span>
+  <span class="kw">RECEIVE</span> score <span class="kw">FROM KEYBOARD</span>
+<span class="kw">END WHILE</span>
+<span class="kw">SEND</span> <span class="str">"Valid score: "</span> <span class="op">&amp;</span> score <span class="kw">TO DISPLAY</span>`,
+    pseudo: `score = -1
+While score &lt; 0 OR score &gt; 100
+  Input score
+End while
+Print "Valid score: " + score`,
+    note: "<strong>Reading it:</strong> DECLARE … INITIALLY sets up the variable. WHILE … DO … END WHILE becomes <em>While … End while</em>. RECEIVE … FROM KEYBOARD becomes <em>Input</em>. SEND … TO DISPLAY becomes <em>Print</em>. The &amp; operator becomes + in pseudocode. The -1 starting value ensures the loop always runs at least once."
+  },
+  {
+    title: "Running total — adding up 5 prices",
+    scenario: "A program reads 5 prices from the user and displays the total.",
+    sqarl: `<span class="kw">DECLARE</span> total <span class="kw">INITIALLY</span> <span class="val">0.0</span>
+<span class="kw">DECLARE</span> price <span class="kw">INITIALLY</span> <span class="val">0.0</span>
+<span class="kw">DECLARE</span> count <span class="kw">INITIALLY</span> <span class="val">0</span>
+<span class="kw">WHILE</span> count &lt; <span class="val">5</span> <span class="kw">DO</span>
+  <span class="kw">RECEIVE</span> price <span class="kw">FROM KEYBOARD</span>
+  <span class="kw">SET</span> total <span class="kw">TO</span> total + price
+  <span class="kw">SET</span> count <span class="kw">TO</span> count + <span class="val">1</span>
+<span class="kw">END WHILE</span>
+<span class="kw">SEND</span> <span class="str">"Total: "</span> <span class="op">&amp;</span> total <span class="kw">TO DISPLAY</span>`,
+    pseudo: `total = 0
+price = 0
+count = 0
+While count &lt; 5
+  Input price
+  total = total + price
+  count = count + 1
+End while
+Print "Total: " + total`,
+    note: "<strong>Reading it:</strong> Each DECLARE … INITIALLY becomes a simple assignment. Each SET … TO becomes = in pseudocode. The loop runs while count is less than 5, collecting a price and adding it to the running total each time."
+  },
+  {
+    title: "Array traversal — finding the highest temperature",
+    scenario: "A program finds the highest value in an array of seven temperatures.",
+    sqarl: `<span class="kw">DECLARE</span> temps <span class="kw">INITIALLY</span>
+  [<span class="val">12.3</span>, <span class="val">15.1</span>, <span class="val">9.8</span>, <span class="val">17.4</span>, <span class="val">14.0</span>, <span class="val">11.2</span>, <span class="val">16.5</span>]
+<span class="kw">DECLARE</span> highest <span class="kw">INITIALLY</span> temps[<span class="val">0</span>]
+<span class="kw">FOR EACH</span> temp <span class="kw">FROM</span> temps <span class="kw">DO</span>
+  <span class="kw">IF</span> temp &gt; highest <span class="kw">THEN</span>
+    <span class="kw">SET</span> highest <span class="kw">TO</span> temp
+  <span class="kw">END IF</span>
+<span class="kw">END FOR EACH</span>
+<span class="kw">SEND</span> <span class="str">"Highest: "</span> <span class="op">&amp;</span> highest <span class="kw">TO DISPLAY</span>`,
+    pseudo: `temps = [12.3, 15.1, 9.8, 17.4, 14.0, 11.2, 16.5]
+highest = temps[0]
+For each temp in temps
+  If temp &gt; highest then
+    highest = temp
+  End if
+End for each
+Print "Highest: " + highest`,
+    note: "<strong>Reading it:</strong> temps[0] is the first element (arrays start at index 0). FOR EACH … FROM … DO becomes <em>For each … in …</em> — drop the FROM and DO, add \"in\". SET highest TO temp becomes highest = temp. Notice how much cleaner the pseudocode looks."
+  },
+  {
+    title: "Conditional output — grade boundaries",
+    scenario: "A program reads a mark and outputs the appropriate grade.",
+    sqarl: `<span class="kw">DECLARE</span> mark <span class="kw">AS INTEGER INITIALLY FROM KEYBOARD</span>
+<span class="kw">IF</span> mark >= <span class="val">70</span> <span class="kw">THEN</span>
+  <span class="kw">SEND</span> <span class="str">"A"</span> <span class="kw">TO DISPLAY</span>
+<span class="kw">ELSE</span>
+  <span class="kw">IF</span> mark >= <span class="val">60</span> <span class="kw">THEN</span>
+    <span class="kw">SEND</span> <span class="str">"B"</span> <span class="kw">TO DISPLAY</span>
+  <span class="kw">ELSE</span>
+    <span class="kw">IF</span> mark >= <span class="val">50</span> <span class="kw">THEN</span>
+      <span class="kw">SEND</span> <span class="str">"C"</span> <span class="kw">TO DISPLAY</span>
+    <span class="kw">ELSE</span>
+      <span class="kw">SEND</span> <span class="str">"Fail"</span> <span class="kw">TO DISPLAY</span>
+    <span class="kw">END IF</span>
+  <span class="kw">END IF</span>
+<span class="kw">END IF</span>`,
+    pseudo: `Input mark
+If mark >= 70 then
+  Print "A"
+Else if mark >= 60 then
+  Print "B"
+Else if mark >= 50 then
+  Print "C"
+Else
+  Print "Fail"
+End if`,
+    note: "<strong>Reading it:</strong> SQARL nests each extra condition as a new IF inside ELSE — that's just its way of doing \"else if\". In your pseudocode you can write <em>Else if</em> directly. This makes your answer much shorter and cleaner. DECLARE … INITIALLY FROM KEYBOARD is a combined declare + input — write it as <em>Input mark</em>."
+  },
+  {
+    title: "String operations — counting vowels",
+    scenario: "A program counts how many vowels are in a word typed by the user.",
+    sqarl: `<span class="kw">DECLARE</span> word <span class="kw">AS STRING INITIALLY FROM KEYBOARD</span>
+<span class="kw">DECLARE</span> vowels <span class="kw">INITIALLY</span> <span class="str">"aeiou"</span>
+<span class="kw">DECLARE</span> count <span class="kw">INITIALLY</span> <span class="val">0</span>
+<span class="kw">FOR EACH</span> letter <span class="kw">FROM</span> word <span class="kw">DO</span>
+  <span class="kw">FOR EACH</span> v <span class="kw">FROM</span> vowels <span class="kw">DO</span>
+    <span class="kw">IF</span> letter = v <span class="kw">THEN</span>
+      <span class="kw">SET</span> count <span class="kw">TO</span> count + <span class="val">1</span>
+    <span class="kw">END IF</span>
+  <span class="kw">END FOR EACH</span>
+<span class="kw">END FOR EACH</span>
+<span class="kw">SEND</span> <span class="str">"Vowels: "</span> <span class="op">&amp;</span> count <span class="kw">TO DISPLAY</span>`,
+    pseudo: `Input word
+vowels = "aeiou"
+count = 0
+For each letter in word
+  For each v in vowels
+    If letter = v then
+      count = count + 1
+    End if
+  End for each
+End for each
+Print "Vowels: " + count`,
+    note: "<strong>Reading it:</strong> A STRING in SQARL behaves like an array of characters, so FOR EACH letter FROM word visits each character one at a time. The outer loop goes through each letter of the word; the inner loop checks it against each vowel. Two nested loops means two closing End for each lines."
+  }
+];
+
+let examplesBuilt = false;
+function buildExamples() {
+  examplesBuilt = true;
+  document.getElementById('examples-container').innerHTML = examples.map((ex, i) => `
+    <div class="compare-card">
+      <div class="compare-head"><span class="compare-tag">Example ${i+1}</span>${ex.title}</div>
+      <div style="font-size:13px;color:var(--muted);padding:10px 16px 0;font-style:italic;font-weight:300">${ex.scenario}</div>
+      <div class="compare-cols">
+        <div class="compare-col">
+          <div class="compare-col-label">SQARL — what the exam shows you</div>
+          <pre><code>${ex.sqarl}</code></pre>
+        </div>
+        <div class="compare-col">
+          <div class="compare-col-label">Pseudocode — what you write</div>
+          <pre style="background:#1e2a1e"><code style="color:#a8d5a8">${ex.pseudo}</code></pre>
+        </div>
+      </div>
+      <div class="compare-note">${ex.note}</div>
+    </div>
+  `).join('');
+}
+
+// ── Quiz ───────────────────────────────────────────────────
+// Every question shows SQARL; students identify correct pseudocode,
+// spot pseudocode mistakes, or order pseudocode lines.
+
+const questions = [
+  {
+    type: 'mcq',
+    topic: 'Reading SQARL: variable declaration',
+    question: 'The exam shows you this SQARL:',
+    sqarl: 'DECLARE total INITIALLY 0',
+    prompt: 'Which pseudocode line means the same thing?',
+    options: ['SET total TO 0', 'total = 0', 'DECLARE total = 0', 'Input total'],
+    answer: 1,
+    feedback: '<strong>Correct!</strong> <code>DECLARE … INITIALLY</code> simply creates a variable with a starting value. In pseudocode that is just <code>total = 0</code>.',
+    wrongFeedback: '<code>DECLARE name INITIALLY value</code> means "create a variable with this starting value". The pseudocode equivalent is <code>total = 0</code>. SET … TO is only used in SQARL for <em>updating</em> a variable that already exists — you would never write that in pseudocode.'
+  },
+  {
+    type: 'mcq',
+    topic: 'Reading SQARL: assignment',
+    question: 'The exam shows you this SQARL:',
+    sqarl: 'SET count TO count + 1',
+    prompt: 'Which pseudocode line means the same thing?',
+    options: ['DECLARE count INITIALLY count + 1', 'count + 1', 'count = count + 1', 'Input count'],
+    answer: 2,
+    feedback: '<strong>Correct!</strong> <code>SET variable TO expression</code> is SQARL\'s way of writing assignment. In pseudocode you simply write <code>count = count + 1</code>.',
+    wrongFeedback: '<code>SET name TO expression</code> means "update this variable to this value". In pseudocode that is just <code>count = count + 1</code>. You never write SET … TO in pseudocode.'
+  },
+  {
+    type: 'mcq',
+    topic: 'Reading SQARL: input',
+    question: 'The exam shows you this SQARL:',
+    sqarl: 'RECEIVE username FROM KEYBOARD',
+    prompt: 'Which pseudocode line means the same thing?',
+    options: ['Print username', 'Input username', 'KEYBOARD username', 'Display username'],
+    answer: 1,
+    feedback: '<strong>Correct!</strong> <code>RECEIVE … FROM KEYBOARD</code> reads a value typed by the user. In pseudocode: <code>Input username</code>.',
+    wrongFeedback: '<code>RECEIVE … FROM KEYBOARD</code> means the user is typing something in. In pseudocode that is simply <code>Input username</code>. Print and Display are for output, not input.'
+  },
+  {
+    type: 'mcq',
+    topic: 'Reading SQARL: output',
+    question: 'The exam shows you this SQARL:',
+    sqarl: 'SEND "Score: " & score TO DISPLAY',
+    prompt: 'Which pseudocode line means the same thing?',
+    options: ['Input "Score: " + score', 'RECEIVE score FROM DISPLAY', 'score = "Score: "', 'Print "Score: " + score'],
+    answer: 3,
+    feedback: '<strong>Correct!</strong> <code>SEND … TO DISPLAY</code> outputs to screen — that is <code>Print</code> in pseudocode. Also note: SQARL\'s <code>&amp;</code> for joining values becomes <code>+</code> in pseudocode.',
+    wrongFeedback: '<code>SEND … TO DISPLAY</code> means showing something on screen — in pseudocode that is Print (or Output/Display). Also remember: SQARL uses <code>&amp;</code> to join values but pseudocode uses <code>+</code>.'
+  },
+  {
+    type: 'mcq',
+    topic: 'Reading SQARL: WHILE loop purpose',
+    question: 'The exam shows you this SQARL:',
+    sqarl: 'DECLARE age AS INTEGER INITIALLY -1\nWHILE age < 0 OR age > 120 DO\n  RECEIVE age FROM KEYBOARD\nEND WHILE',
+    prompt: 'Why is age initialised to -1 before the loop?',
+    options: [
+      'To set the data type to INTEGER',
+      'Because -1 is a default value in SQARL',
+      'So the WHILE condition is true on the first check, forcing the loop to run at least once',
+      'To prevent the user entering a negative number'
+    ],
+    answer: 2,
+    feedback: '<strong>Correct!</strong> A WHILE loop checks its condition <em>before</em> running. Starting at -1 (which is outside the valid range 0–120) makes the condition immediately true, so the loop always runs at least once to collect real input.',
+    wrongFeedback: 'A WHILE loop checks its condition before running the body. If age started at a valid value (e.g. 0), the condition would be false straight away and the loop would be skipped entirely. Starting at -1 guarantees the condition is true on the first check, so the user is always asked for input.'
+  },
+  {
+    type: 'mcq',
+    topic: 'Reading SQARL: nested IF',
+    question: 'The exam shows you this SQARL:',
+    sqarl: 'IF mark >= 60 THEN\n  SEND "Pass" TO DISPLAY\nELSE\n  IF mark >= 40 THEN\n    SEND "Merit" TO DISPLAY\n  END IF\nEND IF',
+    prompt: 'How would you express this more simply in pseudocode?',
+    options: [
+      'If mark >= 60 then\n  Print "Pass"\nEnd if\nIf mark >= 40 then\n  Print "Merit"\nEnd if',
+      'If mark >= 60 then\n  Print "Pass"\nElse if mark >= 40 then\n  Print "Merit"\nEnd if',
+      'While mark >= 60\n  Print "Pass"\nEnd while',
+      'If mark >= 60 then\n  Print "Pass"\nElse\n  Print "Merit"\nEnd if'
+    ],
+    answer: 1,
+    feedback: '<strong>Correct!</strong> SQARL forces the nested IF structure because it has no ELSE IF keyword. In pseudocode you can flatten this to a clean <em>Else if</em> — it means the same thing and is much easier to read.',
+    wrongFeedback: 'The nested <code>IF</code> inside <code>ELSE</code> in SQARL is just its way of doing "else if". In pseudocode you can write <code>Else if mark >= 40 then</code> directly. Two separate IF blocks would not be equivalent — the second would run even if the first was true.'
+  },
+  {
+    type: 'mcq',
+    topic: 'Reading SQARL: FOR EACH loop',
+    question: 'The exam shows you this SQARL:',
+    sqarl: 'FOR EACH name FROM classList DO\n  SEND name TO DISPLAY\nEND FOR EACH',
+    prompt: 'Which pseudocode correctly expresses the same logic?',
+    options: [
+      'While name in classList\n  Print name\nEnd while',
+      'For name = 0 to length(classList)\n  Print name\nEnd for',
+      'For each name in classList\n  Print name\nEnd for each',
+      'For name FROM classList\n  Print name\nEnd for'
+    ],
+    answer: 2,
+    feedback: '<strong>Correct!</strong> <code>FOR EACH … FROM … DO</code> becomes <em>For each … in …</em> in pseudocode. Change FROM to "in" and drop the DO keyword.',
+    wrongFeedback: '<code>FOR EACH name FROM classList DO</code> visits every element in the array. In pseudocode: <em>For each name in classList</em>. Change FROM to "in" and drop the DO. A WHILE loop or counting FOR loop would not be the right structure here.'
+  },
+  {
+    type: 'mcq',
+    topic: 'Reading SQARL: tracing code',
+    question: 'The exam shows you this SQARL:',
+    sqarl: 'DECLARE nums INITIALLY [3, 7, 2, 9, 4]\nDECLARE total INITIALLY 0\nFOR EACH n FROM nums DO\n  SET total TO total + n\nEND FOR EACH\nSEND total TO DISPLAY',
+    prompt: 'What value is displayed when this program runs?',
+    options: ['3', '9', '5', '25'],
+    answer: 3,
+    feedback: '<strong>Correct!</strong> Trace through: total starts at 0. Each loop pass adds the next element: 0+3=3, 3+7=10, 10+2=12, 12+9=21, 21+4=25. The final value sent to DISPLAY is 25.',
+    wrongFeedback: 'Trace step by step — total starts at 0 and accumulates: 0+3=3 → 3+7=10 → 10+2=12 → 12+9=21 → 21+4=25. So 25 is displayed. This is the standard running total pattern.'
+  },
+  {
+    type: 'mcq',
+    topic: 'Reading SQARL: tracing a WHILE loop',
+    question: 'The exam shows you this SQARL:',
+    sqarl: 'DECLARE x INITIALLY 1\nWHILE x < 20 DO\n  SET x TO x * 2\nEND WHILE\nSEND x TO DISPLAY',
+    prompt: 'What value is displayed? Trace through the loop carefully.',
+    options: ['16', '20', '32', '10'],
+    answer: 2,
+    feedback: '<strong>Correct!</strong> Trace: x = 1 → 2 → 4 → 8 → 16 → 32. After x becomes 16, the condition (16 &lt; 20) is still true so the loop runs again, giving 32. Now 32 &lt; 20 is false, the loop ends, and 32 is displayed.',
+    wrongFeedback: 'Trace carefully: x doubles each time: 1 → 2 → 4 → 8 → 16. At 16 the condition (x &lt; 20) is still true, so the loop runs once more: 16 × 2 = 32. Now 32 &lt; 20 is false, the loop stops, and 32 is displayed. A common mistake is to stop at 16.'
+  },
+  {
+    type: 'spot',
+    topic: 'Spot the pseudocode mistake',
+    question: 'A student read the following SQARL and wrote pseudocode. One line still contains SQARL syntax. Click the line with the mistake.',
+    sqarl: 'DECLARE score INITIALLY 0\nWHILE score < 10 DO\n  RECEIVE score FROM KEYBOARD\nEND WHILE\nSEND score TO DISPLAY',
+    lines: [
+      'score = 0',
+      'While score < 10',
+      '  RECEIVE score FROM KEYBOARD',
+      'End while',
+      'Print score'
+    ],
+    errorLine: 2,
+    fix: 'Line 3 still uses SQARL syntax. In pseudocode it should be <code>Input score</code>. Remember: RECEIVE … FROM KEYBOARD → Input.'
+  },
+  {
+    type: 'spot',
+    topic: 'Spot the pseudocode mistake',
+    question: 'A student read the following SQARL and wrote pseudocode. One line still contains SQARL syntax. Click the line with the mistake.',
+    sqarl: 'DECLARE total INITIALLY 0\nFOR EACH item FROM basket DO\n  SET total TO total + item\nEND FOR EACH\nSEND "Total: " & total TO DISPLAY',
+    lines: [
+      'total = 0',
+      'For each item in basket',
+      '  total = total + item',
+      'End for each',
+      'SEND "Total: " & total TO DISPLAY'
+    ],
+    errorLine: 4,
+    fix: 'Line 5 still uses SQARL syntax. In pseudocode it should be <code>Print "Total: " + total</code>. Remember: SEND … TO DISPLAY → Print, and &amp; → +.'
+  },
+  {
+    type: 'spot',
+    topic: 'Spot the pseudocode mistake',
+    question: 'A student read the following SQARL and wrote pseudocode. One line still contains SQARL syntax. Click the line with the mistake.',
+    sqarl: 'IF score >= 50 THEN\n  SEND "Pass" TO DISPLAY\nELSE\n  IF score >= 40 THEN\n    SEND "Merit" TO DISPLAY\n  END IF\nEND IF',
+    lines: [
+      'If score >= 50 then',
+      '  Print "Pass"',
+      'Else if score >= 40 then',
+      '  SET merit TO "Merit"',
+      'End if'
+    ],
+    errorLine: 3,
+    fix: 'Line 4 still uses SQARL syntax (<code>SET … TO</code>). In pseudocode it should simply be <code>Print "Merit"</code>. The Else if on line 3 is correct — well done for flattening the nested SQARL structure.'
+  },
+  {
+    type: 'order',
+    topic: 'Order the pseudocode',
+    question: 'The exam shows you this SQARL for a simple counting loop:',
+    sqarl: 'FOR i FROM 1 TO 5 DO\n  SEND i TO DISPLAY\nEND FOR',
+    instruction: 'Put the pseudocode lines in the correct order.',
+    lines: [
+      'End for',
+      'For i = 1 to 5',
+      '  Print i'
+    ],
+    correctOrder: [1, 2, 0],
+    feedback: 'A FOR loop in pseudocode: <em>For i = 1 to 5</em> → body → <em>End for</em>. SQARL\'s FROM becomes = and the DO keyword is dropped.'
+  },
+  {
+    type: 'order',
+    topic: 'Order the pseudocode',
+    question: 'The exam shows you this SQARL for input validation:',
+    sqarl: 'DECLARE age AS INTEGER INITIALLY -1\nWHILE age < 0 OR age > 150 DO\n  RECEIVE age FROM KEYBOARD\nEND WHILE',
+    instruction: 'Put the pseudocode lines in the correct order.',
+    lines: [
+      '  Input age',
+      'age = -1',
+      'End while',
+      'While age < 0 OR age > 150'
+    ],
+    correctOrder: [1, 3, 0, 2],
+    feedback: 'The input validation pattern: set invalid starting value → While condition → Input → End while. The -1 starting value is essential — it makes the WHILE condition true on the first check.'
+  },
+  {
+    type: 'order',
+    topic: 'Order the pseudocode',
+    question: 'The exam shows you this SQARL for finding the highest value in an array:',
+    sqarl: 'DECLARE highest INITIALLY nums[0]\nFOR EACH n FROM nums DO\n  IF n > highest THEN\n    SET highest TO n\n  END IF\nEND FOR EACH',
+    instruction: 'Put the pseudocode lines in the correct order.',
+    lines: [
+      '    highest = n',
+      '  End if',
+      'End for each',
+      '  If n > highest then',
+      'highest = nums[0]',
+      'For each n in nums'
+    ],
+    correctOrder: [4, 5, 3, 0, 1, 2],
+    feedback: 'Structure: set highest to first element → For each loop → If condition → update highest → End if → End for each. Notice SET highest TO n in SQARL becomes simply highest = n in pseudocode.'
+  },
+  {
+    type: 'mcq',
+    topic: 'Reading SQARL: string as array of characters',
+    question: 'The exam shows you this SQARL:',
+    sqarl: 'DECLARE word AS STRING INITIALLY FROM KEYBOARD\nDECLARE count INITIALLY 0\nFOR EACH letter FROM word DO\n  SET count TO count + 1\nEND FOR EACH\nSEND count TO DISPLAY',
+    prompt: 'What does this program do?',
+    options: [
+      'Counts the number of words typed by the user',
+      'Counts the number of characters in the word typed by the user',
+      'Prints every letter of the word on a separate line',
+      'Checks whether the word contains any repeated letters'
+    ],
+    answer: 1,
+    feedback: '<strong>Correct!</strong> In SQARL a STRING is treated as an array of characters. <code>FOR EACH letter FROM word</code> visits each character one by one, and <code>count</code> increases by 1 for each — so it ends up holding the total number of characters, i.e. the length of the word.',
+    wrongFeedback: 'In SQARL a STRING behaves like an array of characters. <code>FOR EACH letter FROM word</code> iterates over every individual character in turn. Since count goes up by 1 each time, it counts the total number of characters — the length of the word.'
+  }
+];
+
+// ── Quiz state ─────────────────────────────────────────────
+let quizBuilt = false;
+let currentQ = 0;
+let score = 0;
+let answerStates = [];
+let dragSrc = null;
+
+function buildQuiz() {
+  quizBuilt = true;
+  currentQ = 0; score = 0;
+  answerStates = new Array(questions.length).fill(null);
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion() {
+  const container = document.getElementById('quiz-container');
+  if (currentQ >= questions.length) { renderResults(); return; }
+  const q = questions[currentQ];
+  const pct = Math.round((currentQ / questions.length) * 100);
+
+  const sqarlBlock = q.sqarl
+    ? `<div class="sqarl-label">SQARL — what the exam shows you</div><div class="sqarl-block">${q.sqarl}</div>`
+    : '';
+
+  let bodyHTML = '';
+
+  if (q.type === 'mcq') {
+    bodyHTML = `
+      <div class="quiz-question">${q.question}</div>
+      ${sqarlBlock}
+      <p style="font-size:13px;font-weight:500;margin-bottom:10px">${q.prompt}</p>
+      <div class="options">
+        ${q.options.map((opt, i) => `
+          <button class="option" onclick="answerMCQ(${i})">
+            <span class="opt-letter">${'ABCD'[i]}</span><span>${opt}</span>
+          </button>`).join('')}
+      </div>
+      <div class="feedback" id="qfeedback"></div>
+      <div class="quiz-actions">
+        <button class="btn btn-primary" id="btn-next" onclick="nextQuestion()" disabled>Next →</button>
+      </div>`;
+
+  } else if (q.type === 'spot') {
+    bodyHTML = `
+      <div class="quiz-question">${q.question}</div>
+      ${sqarlBlock}
+      <div class="pseudo-label">Student's pseudocode — click the line with the mistake</div>
+      <div class="error-lines" id="error-lines">
+        ${q.lines.map((line, i) => `
+          <div class="error-line" onclick="answerSpot(${i})">
+            <span class="line-num">${i+1}</span>
+            <span class="line-code">${line}</span>
+          </div>`).join('')}
+      </div>
+      <div class="feedback" id="qfeedback"></div>
+      <div class="quiz-actions">
+        <button class="btn btn-ghost" id="btn-next" onclick="nextQuestion()" style="display:none">Next →</button>
+      </div>`;
+
+  } else if (q.type === 'order') {
+    const idxs = q.correctOrder.map((_, i) => i);
+    const shuffled = [...idxs].sort(() => Math.random() - 0.5);
+    bodyHTML = `
+      <div class="quiz-question">${q.question}</div>
+      ${sqarlBlock}
+      <p style="font-size:13px;font-weight:500;margin-bottom:6px">${q.instruction}</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Drag to reorder.</p>
+      <div class="order-lines" id="order-lines">
+        ${shuffled.map(idx => `
+          <div class="order-line" draggable="true" data-line="${idx}">
+            <span class="drag-handle">⠿</span>${q.lines[idx]}
+          </div>`).join('')}
+      </div>
+      <div class="feedback" id="qfeedback"></div>
+      <div class="quiz-actions">
+        <button class="btn btn-primary" onclick="answerOrder()">Check order</button>
+        <button class="btn btn-ghost" id="btn-next" onclick="nextQuestion()" style="display:none">Next →</button>
+      </div>`;
+  }
+
+  container.innerHTML = `
+    <div class="section-title">Quiz — reading SQARL</div>
+    <div class="section-sub">Each question shows SQARL from a typical exam. Work out what it means and choose or produce the correct pseudocode.</div>
+    <div class="quiz-meta">
+      <span class="quiz-counter">Question ${currentQ+1} of ${questions.length} &mdash; ${q.topic}</span>
+      <span class="quiz-score-badge">Score: ${score}</span>
+    </div>
+    <div class="quiz-progress"><div class="quiz-progress-bar" style="width:${pct}%"></div></div>
+    <div class="quiz-card">
+      <div class="quiz-type">${q.type === 'mcq' ? 'Multiple choice' : q.type === 'spot' ? 'Spot the pseudocode mistake' : 'Order the pseudocode lines'}</div>
+      ${bodyHTML}
+    </div>`;
+
+  if (q.type === 'order') setupDrag();
+}
+
+function answerMCQ(chosen) {
+  if (answerStates[currentQ] !== null) return;
+  const q = questions[currentQ];
+  const correct = chosen === q.answer;
+  answerStates[currentQ] = correct;
+  if (correct) score++;
+  document.querySelectorAll('.option').forEach((opt, i) => {
+    opt.disabled = true;
+    if (i === q.answer) opt.classList.add('correct');
+    else if (i === chosen && !correct) opt.classList.add('wrong');
+    else opt.classList.add('faded');
+  });
+  const fb = document.getElementById('qfeedback');
+  fb.innerHTML = correct ? '✓ ' + q.feedback : '✗ ' + q.wrongFeedback;
+  fb.className = 'feedback show ' + (correct ? 'correct' : 'wrong');
+  document.getElementById('btn-next').disabled = false;
+}
+
+function answerSpot(idx) {
+  if (answerStates[currentQ] !== null) return;
+  const q = questions[currentQ];
+  const correct = idx === q.errorLine;
+  answerStates[currentQ] = correct;
+  if (correct) score++;
+  document.querySelectorAll('.error-line').forEach((line, i) => {
+    line.onclick = null;
+    if (i === q.errorLine) line.classList.add('correct-line');
+    else if (i === idx && !correct) line.classList.add('wrong-line');
+  });
+  const fb = document.getElementById('qfeedback');
+  fb.innerHTML = (correct ? '✓ Correct! ' : '✗ Not that line. ') + q.fix;
+  fb.className = 'feedback show ' + (correct ? 'correct' : 'wrong');
+  document.getElementById('btn-next').style.display = '';
+}
+
+function answerOrder() {
+  if (answerStates[currentQ] !== null) return;
+  const q = questions[currentQ];
+  const placed = [...document.querySelectorAll('#order-lines .order-line')].map(l => parseInt(l.dataset.line));
+  const correct = q.correctOrder.every((expected, pos) => placed[pos] === expected);
+  answerStates[currentQ] = correct;
+  if (correct) score++;
+  const fb = document.getElementById('qfeedback');
+  fb.innerHTML = (correct ? '✓ Correct! ' : '✗ Not quite. ') + q.feedback;
+  fb.className = 'feedback show ' + (correct ? 'correct' : 'wrong');
+  document.querySelector('.quiz-card .btn-primary').disabled = true;
+  document.getElementById('btn-next').style.display = '';
+}
+
+function nextQuestion() { currentQ++; renderQuizQuestion(); }
+
+function renderResults() {
+  const pct = Math.round((score / questions.length) * 100);
+  const cls = pct >= 80 ? 'great' : pct >= 60 ? 'good' : 'retry';
+  const msg = pct >= 80 ? 'Excellent!' : pct >= 60 ? 'Good effort' : 'Keep practising';
+  const sub = pct >= 80
+    ? "You're confident reading SQARL and translating it into pseudocode."
+    : pct >= 60
+    ? "Review the examples tab for the constructs you found tricky."
+    : "Work through the Learn and Examples tabs, then try again.";
+  document.getElementById('quiz-container').innerHTML = `
+    <div class="section-title">Quiz complete</div>
+    <div class="results-card">
+      <div class="results-score ${cls}">${pct}%</div>
+      <div class="results-label">${msg}</div>
+      <div class="results-sub">${sub}</div>
+      <div class="results-breakdown">
+        <div class="breakdown-stat c"><strong>${score}</strong><small>Correct</small></div>
+        <div class="breakdown-stat w"><strong>${questions.length - score}</strong><small>Incorrect</small></div>
+        <div class="breakdown-stat"><strong>${questions.length}</strong><small>Total</small></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="restartQuiz()">Try again</button>
+        <button class="btn btn-ghost" onclick="showSection('examples', document.querySelectorAll('.nav-tab')[1])">Review examples</button>
+      </div>
+    </div>`;
+}
+
+function restartQuiz() { quizBuilt = false; buildQuiz(); }
+
+function setupDrag() {
+  const list = document.getElementById('order-lines');
+  if (!list) return;
+  list.addEventListener('dragstart', e => {
+    dragSrc = e.target.closest('.order-line');
+    dragSrc.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  list.addEventListener('dragend', () => {
+    document.querySelectorAll('.order-line').forEach(l => l.classList.remove('dragging', 'drag-over'));
+  });
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    const target = e.target.closest('.order-line');
+    if (!target || target === dragSrc) return;
+    document.querySelectorAll('.order-line').forEach(l => l.classList.remove('drag-over'));
+    target.classList.add('drag-over');
+  });
+  list.addEventListener('drop', e => {
+    e.preventDefault();
+    const target = e.target.closest('.order-line');
+    if (!target || target === dragSrc) return;
+    const items = [...list.querySelectorAll('.order-line')];
+    if (items.indexOf(dragSrc) < items.indexOf(target)) list.insertBefore(dragSrc, target.nextSibling);
+    else list.insertBefore(dragSrc, target);
+    document.querySelectorAll('.order-line').forEach(l => l.classList.remove('drag-over'));
+  });
+}
+</script>
+</body>
+</html>
